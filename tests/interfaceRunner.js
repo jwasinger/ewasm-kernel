@@ -31,32 +31,7 @@ function runTests (tests) {
       envData.callData = new Buffer(envData.callData.slice(2), 'hex')
       envData.callValue = new U256(envData.callValue)
 
-      /*
-      for (let address in envData.state) {
-        const account = envData.state[address]
-        const accountVertex = new Vertex()
-
-        accountVertex.set('code', new Vertex({
-          value: new Buffer(account.code.slice(2), 'hex')
-        }))
-
-        accountVertex.set('balance', new Vertex({
-          value: new Buffer(account.balance.slice(2), 'hex')
-        }))
-
-        for (let key in account.storage) {
-          accountVertex.set(['storage', ...new Buffer(key.slice(2), 'hex')], new Vertex({
-            value: new Buffer(account.storage[key].slice(2), 'hex')
-          }))
-        }
-
-        const path = [...new Buffer(address.slice(2), 'hex')]
-        rootVertex.set(path, accountVertex)
-      }
-
-      envData.state = await rootVertex.get([...envData.address.toBuffer()])
-      */
-
+      // state is in envData.state
       const kernel = new Kernel({code: code})
       const env = new Environment(envData)
 

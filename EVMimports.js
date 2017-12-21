@@ -137,16 +137,6 @@ module.exports = class Interface {
     const balance = this.kernel.environment.state[addressHex].balance
     const balanceU256 = new U256(balance)
 
-    /*
-    const path = [...this.getMemory(addressOffset, ADDRESS_SIZE_BYTES), 'balance']
-    const opPromise = this.kernel.environment.state.root.get(path)
-      .then(vertex => {
-        log.debug('getBalance vertex.value:', vertex.value)
-        new U256(vertex.value)
-      })
-      .catch(() => new U256(0))
-    */
-
     const opPromise = Promise.resolve(balanceU256)
 
     this.kernel.pushOpsQueue(opPromise, cbIndex, balance => {
@@ -518,16 +508,6 @@ module.exports = class Interface {
     
     const opPromise = Promise.resolve(0)
 
-    /*
-    log.debug('EVMimports.js _call calling this.kernel.environment.state.root.get(address)')
-    let opPromise = this.kernel.environment.state.root.get(address)
-    .catch(() => {
-      // why does this exist?
-      this.takeGas(25000)
-    })
-    */
-
-    // log.debug('EVMimports.js _call pushing opPromise to pushOpsQueue')
     // wait for all the prevouse async ops to finish before running the callback
     this.kernel.pushOpsQueue(opPromise, cbIndex, () => {
       return 1
@@ -608,12 +588,7 @@ module.exports = class Interface {
     this.takeGas(5000)
     
     //log.debug('getBalance kernel.environment.state:', this.kernel.environment.state)
-    
-    log.debug('EVMimports.js storageStore')
 
-    //log.debug('sstore keyOffset:', keyOffset)
-    //log.debug('sstore valueOffset:', valueOffset)
-    
     const key = this.getMemory(keyOffset, U256_SIZE_BYTES)
     //log.debug('key:', key)
     
@@ -622,18 +597,6 @@ module.exports = class Interface {
     const valIsZero = value.every((i) => i === 0)
     
     const contextAccount = this.kernel.environment.address
-    
-    
-    /*
-    const path = ['storage', ...this.getMemory(pathOffset, U256_SIZE_BYTES)]
-    // copy the value
-    const value = this.getMemory(valueOffset, U256_SIZE_BYTES).slice(0)
-    const valIsZero = value.every((i) => i === 0)
-    const opPromise = this.kernel.environment.state.get(path)
-      .then(vertex => vertex.value)
-      .catch(() => null)
-    */
-    
     const opPromise = Promise.resolve(value)
 
 
@@ -641,7 +604,6 @@ module.exports = class Interface {
       if (valIsZero && oldValue) {
         // delete a value
         this.kernel.environment.gasRefund += 15000
-        //this.kernel.environment.state.del(path)
         delete this.kernel.environment.state[contextAccount][key]
       } else {
         if (!valIsZero && !oldValue) {
@@ -650,11 +612,6 @@ module.exports = class Interface {
         }
         // update
         this.kernel.environment.state[contextAccount][key] = value
-        /*
-        this.kernel.environment.state.set(path, new Vertex({
-          value: value
-        }))
-        */
       }
     })
   }
@@ -672,17 +629,7 @@ module.exports = class Interface {
     //log.debug('key:', key)
     
     const contextAccount = this.kernel.environment.address
-    
     const value = this.kernel.environment.state[contextAccount][key]
-
-    /*
-    // convert the path to an array
-    const path = ['storage', ...this.getMemory(pathOffset, U256_SIZE_BYTES)]
-    // get the value from the state
-    const opPromise = this.kernel.environment.state.get(path)
-      .then(vertex => vertex.value)
-      .catch(() => new Uint8Array(32))
-    */
 
     const opPromise = Promise.resolve(value)
 
