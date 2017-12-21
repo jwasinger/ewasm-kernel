@@ -31,6 +31,7 @@ function runTests (tests) {
       envData.callData = new Buffer(envData.callData.slice(2), 'hex')
       envData.callValue = new U256(envData.callValue)
 
+      /*
       for (let address in envData.state) {
         const account = envData.state[address]
         const accountVertex = new Vertex()
@@ -54,6 +55,8 @@ function runTests (tests) {
       }
 
       envData.state = await rootVertex.get([...envData.address.toBuffer()])
+      */
+
       const kernel = new Kernel({code: code})
       const env = new Environment(envData)
 
