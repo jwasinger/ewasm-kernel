@@ -5,16 +5,15 @@
 const fs = require('fs')
 const path = require('path')
 const ethUtil = require('ethereumjs-util')
-const Vertex = require('merkle-trie')
 const U256 = require('./deps/u256.js')
-const Address = require('./deps/address')
+// const Address = require('./deps/address')
 
 const U128_SIZE_BYTES = 16
 const ADDRESS_SIZE_BYTES = 20
 const U256_SIZE_BYTES = 32
 
 const log = require('loglevel')
-//log.setLevel('warn') // hide logs
+// log.setLevel('warn') // hide logs
 log.setLevel('debug') // for debugging
 
 // The interface exposed to the WebAessembly Core
@@ -130,9 +129,9 @@ module.exports = class Interface {
     log.debug('EVMImports.js getBalance')
     this.takeGas(20)
 
-    //log.debug('getBalance kernel.environment.state:', this.kernel.environment.state)
+    // log.debug('getBalance kernel.environment.state:', this.kernel.environment.state)
     const address = this.getMemory(addressOffset, ADDRESS_SIZE_BYTES)
-    const addressHex = '0x' + (new Buffer(address)).toString('hex')
+    const addressHex = '0x' + Buffer.from(address).toString('hex')
 
     const balance = this.kernel.environment.state[addressHex].balance
     const balanceU256 = new U256(balance)
@@ -359,7 +358,7 @@ module.exports = class Interface {
    */
   getBlockCoinbase (offset) {
     log.debug('EVMImports.js getBlockCoinbase')
-    //log.debug('this.kernel.environment.coinbase:', this.kernel.environment.coinbase)
+    // log.debug('this.kernel.environment.coinbase:', this.kernel.environment.coinbase)
     this.takeGas(2)
 
     this.setMemory(offset, ADDRESS_SIZE_BYTES, this.kernel.environment.coinbase.toMemory())
@@ -468,7 +467,7 @@ module.exports = class Interface {
     let opPromise
 
     if (value.gt(this.kernel.environment.value)) {
-      opPromise = Promise.resolve(new Buffer(20).fill(0))
+      opPromise = Promise.resolve(Buffer.alloc(20))
     } else {
       // todo actully run the code
       opPromise = Promise.resolve(ethUtil.generateAddress(this.kernel.environment.address, this.kernel.environment.nonce))
@@ -497,7 +496,7 @@ module.exports = class Interface {
 
     const gas = from64bit(gasHigh, gasLow)
     // Load the params from mem
-    const address = [...this.getMemory(addressOffset, ADDRESS_SIZE_BYTES)]
+    // const toAddress = [...this.getMemory(addressOffset, ADDRESS_SIZE_BYTES)]
     const value = new U256(this.getMemory(valueOffset, U128_SIZE_BYTES))
 
     // Special case for non-zero value; why does this exist?
@@ -505,7 +504,7 @@ module.exports = class Interface {
       this.takeGas(9000 - 2300 + gas)
       this.takeGas(-gas)
     }
-    
+
     const opPromise = Promise.resolve(0)
 
     // wait for all the prevouse async ops to finish before running the callback
@@ -537,8 +536,7 @@ module.exports = class Interface {
       this.takeGas(6700)
     }
 
-    //log.debug('EVMimports.js callCode this.kernel.environment.state:', this.kernel.environment.state)
-    // environment.state is a Vertex object
+    // log.debug('EVMimports.js callCode this.kernel.environment.state:', this.kernel.environment.state)
 
     // TODO: should be message?
     const opPromise = this.kernel.environment.state.root.get(path)
@@ -586,19 +584,18 @@ module.exports = class Interface {
   storageStore (keyOffset, valueOffset, cbIndex) {
     log.debug('EVMimports.js storageStore')
     this.takeGas(5000)
-    
-    //log.debug('getBalance kernel.environment.state:', this.kernel.environment.state)
+
+    // log.debug('getBalance kernel.environment.state:', this.kernel.environment.state)
 
     const key = this.getMemory(keyOffset, U256_SIZE_BYTES)
-    //log.debug('key:', key)
-    
+    // log.debug('key:', key)
+
     const value = this.getMemory(valueOffset, U256_SIZE_BYTES).slice(0)
-    //log.debug('value:', value)
+    // log.debug('value:', value)
     const valIsZero = value.every((i) => i === 0)
-    
+
     const contextAccount = this.kernel.environment.address
     const opPromise = Promise.resolve(value)
-
 
     this.kernel.pushOpsQueue(opPromise, cbIndex, oldValue => {
       if (valIsZero && oldValue) {
@@ -626,8 +623,7 @@ module.exports = class Interface {
     this.takeGas(50)
 
     const key = this.getMemory(keyOffset, U256_SIZE_BYTES)
-    //log.debug('key:', key)
-    
+
     const contextAccount = this.kernel.environment.address
     const value = this.kernel.environment.state[contextAccount][key]
 
