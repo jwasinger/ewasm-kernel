@@ -29,6 +29,10 @@ function runTests (tests) {
       envData.callData = Buffer.from(envData.callData.slice(2), 'hex')
       envData.callValue = new U256(envData.callValue)
 
+      for (let address in envData.state) {
+        envData.state[address]['storage'] = {}
+      }
+
       // state is in envData.state
       const kernel = new Kernel({code: code})
       const env = new Environment(envData)

@@ -588,27 +588,29 @@ module.exports = class Interface {
     // log.debug('getBalance kernel.environment.state:', this.kernel.environment.state)
 
     const key = this.getMemory(keyOffset, U256_SIZE_BYTES)
-    // log.debug('key:', key)
+    const keyHex = U256.fromMemory(key).toString(16)
 
     const value = this.getMemory(valueOffset, U256_SIZE_BYTES).slice(0)
-    // log.debug('value:', value)
+    const valueHex = U256.fromMemory(value).toString(16)
     const valIsZero = value.every((i) => i === 0)
 
     const contextAccount = this.kernel.environment.address
-    const opPromise = Promise.resolve(value)
+    const oldStorageVal = this.kernel.environment.state[contextAccount]['storage'][keyHex]
+    const opPromise = Promise.resolve(oldStorageVal)
 
     this.kernel.pushOpsQueue(opPromise, cbIndex, oldValue => {
+      // log.debug('oldValue:', oldValue)
       if (valIsZero && oldValue) {
         // delete a value
         this.kernel.environment.gasRefund += 15000
-        delete this.kernel.environment.state[contextAccount][key]
+        delete this.kernel.environment.state[contextAccount]['storage'][keyHex]
       } else {
         if (!valIsZero && !oldValue) {
           // creating a new value
           this.takeGas(15000)
         }
         // update
-        this.kernel.environment.state[contextAccount][key] = value
+        this.kernel.environment.state[contextAccount]['storage'][keyHex] = valueHex
       }
     })
   }
@@ -620,12 +622,19 @@ module.exports = class Interface {
    */
   storageLoad (keyOffset, resultOffset, cbIndex) {
     log.debug('EVMimports.js storageLoad')
+    // log.debug('getBalance kernel.environment.state:', this.kernel.environment.state)
     this.takeGas(50)
 
     const key = this.getMemory(keyOffset, U256_SIZE_BYTES)
+    const keyHex = U256.fromMemory(key).toString(16)
 
     const contextAccount = this.kernel.environment.address
-    const value = this.kernel.environment.state[contextAccount][key]
+    let value = this.kernel.environment.state[contextAccount]['storage'][keyHex]
+    if (typeof value === 'undefined') {
+      value = new Uint8Array(32)
+    } else {
+      value = (new U256(value)).toMemory()
+    }
 
     const opPromise = Promise.resolve(value)
 
