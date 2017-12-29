@@ -1,77 +1,31 @@
+const Transaction = require('ethereumjs-tx')
 
-  // run tx; the tx message handler
-  // runTx (tx, environment = new Environment()) {
-  //   this.environment = environment
+exports.runTx = async function(tx, environment) {
+  // check to the sender's account to make sure it has enough wei and the correct nonce
+	let fromAcct = environment.state[tx.from]
+	if (new BN(fromAcct.balance).lt(tx.getUpfrontCost())) {
+		message = "sender doesn't have enough funds to send tx. The upfront cost is: " + tx.getUpfrontCost().toString() + ' and the sender\'s account only has: ' + new BN(fromAcct.balance).toString()
+		reject(new Error(message))
+		return
+	} else if (!opts.skipNonce && !(new BN(fromAcct.nonce).eq(new BN(tx.nonce)))) {
+		message = "the tx doesn't have the correct nonce. account has nonce of: " + new BN(fromAcct.nonce).toString() + ' tx has nonce of: ' + new BN(tx.nonce).toString()
+		reject(new Error(message))
+		return
+	}
 
-  //   if (Buffer.isBuffer(tx) || typeof tx === 'string') {
-  //     tx = new Transaction(tx)
-  //     if (!tx.valid) {
-  //       throw new Error('Invalid transaction signature')
-  //     }
-  //   }
+	fromAcct.nonce = new BN(fromAcct.nonce).addn(1)
 
-  //   // look up sender
-  //   let fromAccount = this.environment.state.get(tx.from.toString())
-  //   if (!fromAccount) {
-  //     throw new Error('Sender account not found: ' + tx.from.toString())
-  //   }
+	basefee = tx.getBaseFee()
+	gasLimit = new BN(tx.gasLimit)
+	if (gasLimit.lt(basefee)) {
+		return reject(new Error('base fee exceeds gas limit'))
+	}
+	gasLimit.isub(basefee)
 
-  //   if (fromAccount.get('nonce').gt(tx.nonce)) {
-  //     throw new Error(`Invalid nonce: ${fromAccount.get('nonce')} > ${tx.nonce}`)
-  //   }
+	fromAcct.balance = new BN(fromAcct.balance).sub(new BN(tx.gasLimit).mul(new BN(tx.gasPrice)))
+  debugger
 
-  //   fromAccount.set('nonce', fromAccount.get('nonce').add(new U256(1)))
+  // invoke the ewasm kernel
 
-  //   let isCreation = false
-
-  //   // Special case: contract deployment
-  //   if (tx.to.isZero() && (tx.data.length !== 0)) {
-  //     console.log('This is a contract deployment transaction')
-  //     isCreation = true
-  //   }
-
-  //   // This cost will not be refunded
-  //   let txCost = 21000 + (isCreation ? 32000 : 0)
-  //   tx.data.forEach((item) => {
-  //     if (item === 0) {
-  //       txCost += 4
-  //     } else {
-  //       txCost += 68
-  //     }
-  //   })
-
-  //   if (tx.gasLimit.lt(new U256(txCost))) {
-  //     throw new Error(`Minimum transaction gas limit not met: ${txCost}`)
-  //   }
-
-  //   if (fromAccount.get('balance').lt(tx.gasLimit.mul(tx.gasPrice))) {
-  //     throw new Error(`Insufficient account balance: ${fromAccount.get('balance').toString()} < ${tx.gasLimit.mul(tx.gasPrice).toString()}`)
-  //   }
-
-  //   // deduct gasLimit * gasPrice from sender
-  //   fromAccount.set('balance', fromAccount.get('balance').sub(tx.gasLimit.mul(tx.gasPrice)))
-
-  //   const handler = isCreation ? this.createHandler.bind(this) : this.callHandler.bind(this)
-  //   let ret = handler({
-  //     to: tx.to,
-  //     from: tx.from,
-  //     gasLimit: tx.gasLimit - txCost,
-  //     value: tx.value,
-  //     data: tx.data
-  //   })
-
-  //   // refund unused gas
-  //   if (ret.executionOutcome === 1) {
-  //     fromAccount.set('balance', fromAccount.get('balance').add(tx.gasPrice.mul(ret.gasLeft.add(ret.gasRefund))))
-  //   }
-
-  //   // save new state?
-
-  //   return {
-  //     executionOutcome: ret.executionOutcome,
-  //     accountCreated: isCreation ? ret.accountCreated : undefined,
-  //     returnValue: isCreation ? undefined : ret.returnValue,
-  //     gasLeft: ret.gasLeft,
-  //     logs: ret.logs
-  //   }
-  // }
+  // post transaction logic ...
+}
